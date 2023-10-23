@@ -1,10 +1,66 @@
 #libraries
 import backtrader as bt
+import pandas as pd
 
+
+class Basic(bt.Strategy):
+    def __init__(self):
+        self.sma = bt.indicators.SimpleMovingAverage(self.data, period=20)
+    def next(self):
+        if self.data.close[0] > self.sma[0]:
+            self.buy()
+        else:
+            self.sell()
+
+class MyStrategy1(bt.Strategy):
+    params =  (
+        ('rsi_period', 14),
+        ('rsi_overbought', 70),
+        ('rsi_oversold', 30),
+        ('vwap_period', 20))
+    
+    def __init__(self):
+        self.portfolio_value = []  # List to store portfolio values
+
+
+    def next(self):
+        rsi_value = self.rsi[0]
+        portfolio_value = self.broker.get_value()
+        
+        # Access stocks and their quantities in the portfolio
+        for data in self.datas:
+            stock_name = data._name  # Name of the stock
+            stock_quantity = self.getposition(data).size
+            print(f"{stock_name}: {stock_quantity}")
+        print(f"Portfolio Value: {portfolio_value}")
+        self.portfolio_value.append(portfolio_value)
+        
+        if rsi_value < 30 and not self.crossed_30:
+                self.crossed_30 = True
+                self.crossed_70 = False
+                self.log("RSI crossed below 30 - Buy Signal")
+
+        if rsi_value > 70 and not self.crossed_70:
+            self.crossed_30 = False
+            self.crossed_70 = True
+            self.log("RSI crossed above 70 - Sell Signal")
+
+        vwap_value = self.vwap[0]
+
+        if self.data.close[0] > vwap_value and rsi_value < 30:
+            print("BUY")
+            self.buy()
+
+        if self.data.close[0] < vwap_value and rsi_value > 70:
+            print("SELL")
+
+            self.sell()
+            
+
+        
 class TestStrategy(bt.Strategy):
 # trade after 5 days no matter
     def log(self, txt, dt=None):
-        ''' Logging function for this strategy'''
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 
@@ -74,49 +130,101 @@ class MaCrossStrategy(bt.Strategy):
             self.close()
             
 class SmartCross(bt.Strategy):
-    params = (("vwap_period", 20),)
-
-    def log(self, txt, dt=None):
-        """ Custom logging function for this strategy """
-        dt = dt or self.datas[0].datetime.date(0)
-        print(f"{dt.isoformat()}, {txt}")
+    params = (
+        ('rsi_period', 14),
+        ('rsi_overbought', 70),
+        ('rsi_oversold', 30),
+        ('vwap_period', 20))
 
     def __init__(self):
-        self.vwap = bt.indicators.WeightedMovingAverage(self.data.close, period=self.params.vwap_period)
-        ma_fast = bt.ind.SMA(period=10)
-        ma_slow = bt.ind.SMA(period=50)
-        self.crossover = bt.ind.CrossOver(ma_fast, self.vwap)
-        self.stop_loss = 0 
-        self.take_profit = 0  
+        self.vwap = {}
+        self.crossover = {}
+        self.stop_loss = {}
+        self.take_profit = {}
+        self.rsi = {}
+        self.trade_history = {}
+        self.previous_portfolio_value = self.broker.getvalue()
+        self.previous_position_count = {}
+
+        for data in self.datas:
+            self.vwap[data] = bt.indicators.WeightedMovingAverage(data.close, period=self.params.vwap_period)
+            ma_fast = bt.ind.SMA(period=10)
+            ma_slow = bt.ind.SMA(period=50)
+            self.crossover[data] = bt.ind.CrossOver(ma_fast, self.vwap[data])
+            self.stop_loss[data] = 0
+            self.take_profit[data] = 0
+            self.rsi[data] = bt.indicators.RelativeStrengthIndex(data.close, period=self.params.rsi_period)
+            self.trade_history[data] = []
+            self.previous_position_count[data] = 0
+
+    def log_trade(self, trade, data):
+        dt_open = trade.data.datetime.datetime()
+        dt_close = self.datetime.datetime()
+        price_open = trade.price
+        price_close = trade.price
+        psize = trade.size
+        pnl = trade.pnl
+        self.trade_history[data].append({
+            'Date Open': dt_open,
+            'Date Close': dt_close,
+            'Price Open': price_open,
+            'Price Close': price_close,
+            'Size': psize,
+            'PnL': pnl
+        })
+
+        # Print the trade information
+        trade_df = pd.DataFrame(self.trade_history[data])
+        self.log(f"Trade Information for {data._name}:")
+        self.log(trade_df)
+
+    def print_portfolio(self):
+        for data in self.datas:
+            portfolio_data = []
+            position = self.getposition(data)
+            
+            # Calculate price change from previous day
+            current_price = data.close[0]
+            previous_close = data.close[-1]  # Assuming your data has the previous day's closing price
+            price_change = current_price - previous_close
+            
+            profit_loss = price_change * position.size
+            portfolio_data.append({
+                'Ticker': data._name,
+                'Quantity': position.size,
+                'Price Change': price_change,
+                'Profit/Loss': profit_loss
+            })
+
+        print(f"Portfolio Contents for {data._name}:")
+        for entry in portfolio_data:
+            pass
+            print(f"Ticker: {entry['Ticker']}, Quantity: {entry['Quantity']}, Price Change: {entry['Price Change']}, Profit/Loss: {entry['Profit/Loss']},")
 
     def next(self):
-        if not self.position:
-            if self.crossover > 0:
-                #self.log("BUY SIGNAL")
-                self.buy()
-                self.stop_loss = self.data.close[0] - 2 * (self.data.close[0] - self.data.close[-1])  # Set stop loss
-                self.take_profit = self.data.close[0] + 2 * (self.data.close[0] - self.data.close[-1])  # Set take profit
-        elif self.crossover < 0 or self.data.close[0] <= self.stop_loss or self.data.close[0] >= self.take_profit:
-            if self.data.close[0] <= self.stop_loss:
-                #self.log("STOPPED OUT")
-                pass
-            elif self.data.close[0] >= self.take_profit:
-                #self.log("TAKE PROFIT")
-                pass
-            else:
-                #self.log("SELL SIGNAL")
-                pass
-            self.close()
-            
-    def notify_trade(self, trade):
-        if trade.isclosed:
-            dt = self.data.datetime.datetime()
-            price = trade.price
-            psize = trade.size
-            pnl = trade.pnl
+        for data in self.datas:
+            close_price = data.close[0]
+            open_price = data.open[0]
 
-            #self.log(f"Trade Closed - Date: {dt}, Price: {price}, Size: {psize}, Profit: {pnl}")
+            if not self.position and self.crossover[data] > 0:
+                #print(f"BUY SIGNAL for {data._name}")
+                self.buy(data=data)
+                self.stop_loss[data] = data.close[0] - 2 * (data.close[0] - data.close[-1])
+                self.take_profit[data] = data.close[0] + 2 * (data.close[0] - data.close[-1])
+            elif self.position and (self.crossover[data] < 0 or close_price <= self.stop_loss[data] or close_price >= self.take_profit[data]):
+                if close_price <= self.stop_loss[data]:
+                    print(f"STOPPED OUT for {data._name}")
+                elif close_price >= self.take_profit[data]:
+                    print(f"TAKE PROFIT for {data._name}")
+                else:
+                    print(f"SELL SIGNAL for {data._name}")
+                self.close(data=data)
 
+        self.print_portfolio()
+        current_portfolio_value = self.broker.getvalue()
+        portfolio_change = current_portfolio_value - self.previous_portfolio_value
+        print(f"Portfolio Value: {current_portfolio_value:.2f}, Change: {portfolio_change:.2f}")
+        self.previous_portfolio_value = current_portfolio_value
 
 
 class RSI_VWAP_Strategy(bt.Strategy):

@@ -49,8 +49,8 @@ for date in specific_dates:
         cerebro.addsizer(bt.sizers.PercentSizer, percents=10)
 
         back = cerebro.run()
-        print(f'Portfolio Value on {specific_date}: %.2f' % cerebro.broker.getvalue())
-        print(((cerebro.broker.getvalue() / 1000000.0) - 1) * 100)
+        #print(f'Portfolio Value on {specific_date}: %.2f' % cerebro.broker.getvalue())
+        #print(((cerebro.broker.getvalue() / 1000000.0) - 1) * 100)
 
     except Exception as e:
         print(f"Data is not available for {specific_date}. Error: {e}")

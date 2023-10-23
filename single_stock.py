@@ -25,7 +25,7 @@ if __name__ == "__main__":
         print(f'Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
         back = cerebro.run()
         print(f'Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
-        print(((cerebro.broker.getvalue()/1000000.0)-1)*100)
+        #print(((cerebro.broker.getvalue()/1000000.0)-1)*100)
 
         sharpe = back[0].analyzers.sharpe.get_analysis()
         trans = back[0].analyzers.trans.get_analysis()
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         cerebro.plot()[0]
 
     # specific dates
-    specific_dates = ["2013-01-05", "2016-07-04", "2019-01-01"]  
+    specific_dates = ["2019-01-01"]  
 
     for date in specific_dates:
         specific_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()

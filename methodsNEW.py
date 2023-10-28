@@ -231,7 +231,7 @@ def create_cash_flow_table_if_not_exists(cur):
     """
     cur.execute(create_cash_flow_table_query)
 
-
+# Modify table with data
 def update_or_insert_general_data(cur, ticker, row):
     check_query = "SELECT COUNT(*) FROM General WHERE 'Ticker.Date' = %s;"
     cur.execute(check_query, (ticker,))
@@ -782,167 +782,230 @@ IssuanceOfCapitalStock, IssuanceOfDebt, RepaymentOfDebt, FreeCashFlow
         
         
 # yfinance new data
+#DONE
+# "Total Unusual Items", "Total Unusual Items Excluding Goodwill","Gain On Sale Of Security", "Selling And Marketing Expense", General And Administrative Expense'
+
+
 def create_yf_income_statement_table_if_not_exists(cur):
     create_yf_income_statement_table_query = """
     CREATE TABLE IF NOT EXISTS yfIncomeStatement (
         Ticker VARCHAR(50),
-        "Date_Ticker" TEXT PRIMARY KEY, 
+        Date DATE, 
+        "Tax Effect Of Unusual Items" TEXT,
+        "Tax Rate For Calcs" TEXT,
+        "Normalized EBITDA" TEXT,
+        "Net Income From Continuing Operation Net Minority Interest" TEXT,
+        "Reconciled Cost Of Revenue" TEXT,
+        "EBITDA" TEXT,
+        "EBIT" TEXT,
+        "Net Interest Income" TEXT,
+        "Interest Expense" TEXT,
+        "Interest Income" TEXT,
+        "Normalized Income" TEXT,
+        "Net Income From Continuing And Discontinued Operation" TEXT,
+        "Total Expenses" TEXT,
+        "Total Operating Income As Reported" TEXT,
+        "Diluted Average Shares" TEXT,
+        "Basic Average Shares" TEXT,
+        "Diluted EPS" TEXT,
+        "Basic EPS" TEXT,
+        "Diluted NI Availto Com Stockholders" TEXT,
+        "Net Income Common Stockholders" TEXT,
+        "Net Income" TEXT,
+        "Net Income Including Noncontrolling Interests" TEXT,
+        "Net Income Continuous Operations" TEXT,
+        "Tax Provision" TEXT,
+        "Pretax Income" TEXT,
+        "Other Income Expense" TEXT,
+        "Other Non Operating Income Expenses" TEXT,
 
-        "Tax Effect Of Unusual Items" TEXT, 
-        "Tax Rate For Calcs" TEXT, 
-        "Normalized EBITDA" TEXT, 
-        "Net Income From Continuing Operation Net Minority Interest" TEXT, 
-        "Reconciled Depreciation" TEXT, 
-        "Reconciled Cost Of Revenue" TEXT, 
-        "EBITDA" TEXT, 
-        "EBIT" TEXT, 
-        "Net Interest Income" TEXT, 
-        "Interest Expense" TEXT, 
-        "Interest Income" TEXT, 
-        "Normalized Income" TEXT, 
-        "Net Income From Continuing And Discontinued Operation" TEXT, 
-        "Total Expenses" TEXT, 
-        "Total Operating Income As Reported" TEXT, 
-        "Diluted Average Shares" TEXT, 
-        "Basic Average Shares" TEXT, 
-        "Diluted EPS" TEXT, 
-        "Basic EPS" TEXT, 
-        "Diluted NI Availto Com Stockholders" TEXT, 
-        "Net Income Common Stockholders" TEXT, 
-        "Net Income" TEXT, 
-        "Net Income Including Noncontrolling Interests" TEXT, 
-        "Net Income Continuous Operations" TEXT, 
-        "Tax Provision" TEXT, 
-        "Pretax Income" TEXT, 
-        "Other Income Expense" TEXT, 
-        "Other Non Operating Income Expenses" TEXT, 
-        "Net Non Operating Interest Income Expense" TEXT, 
-        "Interest Expense Non Operating" TEXT, 
-        "Interest Income Non Operating" TEXT, 
-        "Operating Income" TEXT, 
-        "Operating Expense" TEXT, 
-        "Research And Development" TEXT, 
-        "Selling General And Administration" TEXT, 
-        "Gross Profit" TEXT, 
-        "Cost Of Revenue" TEXT, 
-        "Total Revenue" TEXT, 
-        "Operating Revenue" TEXT
+        "Net Non Operating Interest Income Expense" TEXT,
+        "Interest Expense Non Operating" TEXT,
+        "Interest Income Non Operating" TEXT,
+        "Operating Income" TEXT,
+        "Operating Expense" TEXT,
+        "Selling General And Administration" TEXT,
+        "Gross Profit" TEXT,
+        "Cost Of Revenue" TEXT,
+        "Total Revenue" TEXT,
+        "Operating Revenue" TEXT,
+        PRIMARY KEY (Ticker, Date)
     );
     """
+    
+    
     cur.execute(create_yf_income_statement_table_query)
+def create_yf_balance_sheet_table_if_not_exists(cur):
+    create_yf_balance_sheet_table_query = """
+    CREATE TABLE IF NOT EXISTS yfBalanceSheet(
+        Ticker VARCHAR(50),
+        Date DATE, 
+        "Ordinary Shares Number" TEXT,
+        "Share Issued" TEXT,
+        "Net Debt" TEXT, 
+        "Total Debt" TEXT, 
+        PRIMARY KEY (Ticker, Date)
+    );
+    """
+    cur.execute(create_yf_balance_sheet_table_query)
+      
+def create_yf_cash_flow_table_if_not_exists(cur):
+    create_yf_cash_flow_table_query = """
+    CREATE TABLE IF NOT EXISTS yfCashFlow (
+        Ticker VARCHAR(50),
+        Date DATE, 
+        "Free Cash Flow" TEXT, 
+        "Repayment Of Debt" TEXT, 
+        "Issuance Of Debt" TEXT, 
+        PRIMARY KEY (Ticker, Date)
 
+    );
+    """
+    cur.execute(create_yf_cash_flow_table_query)
+    
+ #DONE      
+
+# ONLY ONE DONE
 def update_or_insert_yf_income_statement_data(cur, ticker, row):
-    check_query = "SELECT COUNT(*) FROM yfIncomeStatement WHERE 'Ticker.Date' = %s;"
-    cur.execute(check_query, (ticker,))
+    check_query = "SELECT COUNT(*) FROM yfIncomeStatement WHERE Date = %s::date AND Ticker = %s::text;"
+    cur.execute(check_query, (row['Date'], ticker))
+    print(row)
+    count = cur.fetchone()[0]
+    print(count)
+    if count == 0:
+        insert_query = """
+        INSERT INTO yfIncomeStatement (Ticker, Date, "Tax Effect Of Unusual Items",
+"Tax Rate For Calcs", "Normalized EBITDA",
+"Net Income From Continuing Operation Net Minority Interest",
+"Reconciled Cost Of Revenue",
+"EBITDA",
+"EBIT",
+"Net Interest Income",
+"Interest Expense",
+"Interest Income",
+"Normalized Income",
+"Net Income From Continuing And Discontinued Operation",
+"Total Expenses",
+"Total Operating Income As Reported",
+"Diluted Average Shares",
+"Basic Average Shares",
+"Diluted EPS",
+"Basic EPS",
+"Diluted NI Availto Com Stockholders",
+"Net Income Common Stockholders",
+"Net Income",
+"Net Income Including Noncontrolling Interests",
+"Net Income Continuous Operations",
+"Tax Provision",
+"Pretax Income",
+"Other Income Expense",
+"Other Non Operating Income Expenses",
+
+"Net Non Operating Interest Income Expense",
+"Interest Expense Non Operating",
+"Interest Income Non Operating",
+"Operating Income",
+"Operating Expense",
+"Selling General And Administration",
+
+
+
+"Gross Profit",
+"Cost Of Revenue",
+"Total Revenue",
+"Operating Revenue")
+VALUES  
+        ( %s, %s, %s, %s, %s,%s,%s, %s, %s, %s,%s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s)        
+        ON CONFLICT (Ticker, Date) DO NOTHING;
+
+        """
+        cur.execute(insert_query, (
+           ticker,
+            row['Date'],
+            row['Tax Effect Of Unusual Items'],
+            row['Tax Rate For Calcs'],
+            row['Normalized EBITDA'],
+            row['Net Income From Continuing Operation Net Minority Interest'],
+            row['Reconciled Cost Of Revenue'],
+            row['EBITDA'],
+            row['EBIT'],
+            row['Net Interest Income'],
+            row['Interest Expense'],
+            row['Interest Income'],
+            row['Normalized Income'],
+            row['Net Income From Continuing And Discontinued Operation'],
+            row['Total Expenses'],
+            row['Total Operating Income As Reported'],
+            row['Diluted Average Shares'],
+            row['Basic Average Shares'],
+            row['Diluted EPS'],
+            row['Basic EPS'],
+            row['Diluted NI Availto Com Stockholders'],
+            row['Net Income Common Stockholders'],
+            row['Net Income'],
+            row['Net Income Including Noncontrolling Interests'],
+            row['Net Income Continuous Operations'],
+            row['Tax Provision'],
+            row['Pretax Income'],
+            row['Other Income Expense'],
+            row['Other Non Operating Income Expenses'],
+
+            row['Net Non Operating Interest Income Expense'],
+            row['Interest Expense Non Operating'],
+            row['Interest Income Non Operating'],
+            row['Operating Income'],
+            row['Operating Expense'],
+            row['Selling General And Administration'],
+            row['Gross Profit'],
+            row['Cost Of Revenue'],
+            row['Total Revenue'],
+            row['Operating Revenue']
+        ))
+
+#DONE
+def update_or_insert_yf_balance_sheet_data(cur, ticker, row):
+    check_query = "SELECT COUNT(*) FROM yfBalanceSheet WHERE Date = %s AND Ticker = %s;"
+    cur.execute(check_query, (row['Date'], ticker))
+    count = cur.fetchone()[0]
+
+    if count > 0:  # record with the same date and ticker already exists in the table
+        pass;
+    else:
+        insert_query = """
+        INSERT INTO yfBalanceSheet (Ticker, Date, "Ordinary Shares Number", "Share Issued", "Net Debt", "Total Debt")
+        VALUES 
+        (%s, %s, %s, %s, %s, %s) ON CONFLICT (Ticker, Date) DO NOTHING;
+
+        """
+        cur.execute(insert_query, (
+            ticker,
+            row['Date'], 
+            row["Ordinary Shares Number"],
+            row["Share Issued"],
+            row["Net Debt"],
+            row["Total Debt"]
+        ))
+
+
+def update_or_insert_yf_cash_flow_data(cur, ticker, row):
+    check_query = "SELECT COUNT(*) FROM yfCashFlow WHERE Date = %s AND Ticker = %s;"
+    cur.execute(check_query, (row['Date'], ticker))
     count = cur.fetchone()[0]
 
     if count > 0:
-        update_query = """
-        UPDATE yfIncomeStatement
-        SET "Date_Ticker"= %s, "Tax Effect Of Unusual Items"= %s,  "Tax Rate For Calcs"= %s,  "Normalized EBITDA"= %s,  
-        "Net Income From Continuing Operation Net Minority Interest"= %s,  "Reconciled Depreciation"= %s,  
-        "Reconciled Cost Of Revenue"= %s,  "EBITDA"= %s,  "EBIT"= %s,  "Net Interest Income"= %s,  "Interest Expense"= %s,  
-        "Interest Income"= %s,  "Normalized Income"= %s,  "Net Income From Continuing And Discontinued Operation"= %s,  
-        "Total Expenses"= %s,  "Total Operating Income As Reported"= %s,  "Diluted Average Shares"= %s,  
-        "Basic Average Shares"= %s,  "Diluted EPS"= %s,  "Basic EPS"= %s,  "Diluted NI Availto Com Stockholders"= %s,  
-        "Net Income Common Stockholders"= %s,  "Net Income"= %s,  "Net Income Including Noncontrolling Interests"= %s,  
-        "Net Income Continuous Operations"= %s,  "Tax Provision"= %s,  "Pretax Income"= %s,  "Other Income Expense"= %s,  
-        "Other Non Operating Income Expenses"= %s,  "Net Non Operating Interest Income Expense"= %s,  
-        "Interest Expense Non Operating"= %s,  "Interest Income Non Operating"= %s,  "Operating Income"= %s,  
-        "Operating Expense"= %s,  "Research And Development"= %s,  "Selling General And Administration"= %s,  
-        "Gross Profit"= %s,  "Cost Of Revenue"= %s,  "Total Revenue"= %s,  "Operating Revenue"= %s
-        WHERE Ticker = %s;
-        """
-        cur.execute(update_query, (
-            row["Date_Ticker"], 
-            row["Tax Effect Of Unusual Items"],
-            row["Tax Rate For Calcs"],
-            row["Normalized EBITDA"],
-            row["Net Income From Continuing Operation Net Minority Interest"],
-            row["Reconciled Depreciation"],
-            row["Reconciled Cost Of Revenue"], 
-            row["EBITDA"],
-            row["EBIT"],
-            row["Net Interest Income"], 
-            row["Interest Expense"], 
-            row["Interest Income"], 
-            row["Normalized Income"], 
-            row["Net Income From Continuing And Discontinued Operation"], 
-            row["Total Expenses"], 
-            row["Total Operating Income As Reported"], 
-            row["Diluted Average Shares"], 
-            row["Basic Average Shares"], 
-            row["Diluted EPS"], 
-            row["Basic EPS"], 
-            row["Diluted NI Availto Com Stockholders"], 
-            row["Net Income Common Stockholders"], 
-            row["Net Income"], 
-            row["Net Income Including Noncontrolling Interests"], 
-            row["Net Income Continuous Operations"], 
-            row["Tax Provision"], 
-            row["Pretax Income"], 
-            row["Other Income Expense"],
-            row["Other Non Operating Income Expenses"], 
-            row["Net Non Operating Interest Income Expense"], 
-            row["Interest Expense Non Operating"], 
-            row["Interest Income Non Operating"], 
-            row["Operating Income"], 
-            row["Operating Expense"], 
-            row["Research And Development"], 
-            row["Selling General And Administration"], 
-            row["Gross Profit"], 
-            row["Cost Of Revenue"], 
-            row["Total Revenue"], 
-            row["Operating Revenue"], 
-            ticker
-        ))
+        pass;
     else:
         insert_query = """
-        INSERT INTO yfIncomeStatement (Ticker, "Date_Ticker", "Tax Effect Of Unusual Items", "Tax Rate For Calcs", "Normalized EBITDA", "Net Income From Continuing Operation Net Minority Interest", "Reconciled Depreciation", "Reconciled Cost Of Revenue", "EBITDA", "EBIT", "Net Interest Income", "Interest Expense", "Interest Income", "Normalized Income", "Net Income From Continuing And Discontinued Operation", "Total Expenses", "Total Operating Income As Reported", "Diluted Average Shares", "Basic Average Shares", "Diluted EPS", "Basic EPS", "Diluted NI Availto Com Stockholders", "Net Income Common Stockholders", "Net Income", "Net Income Including Noncontrolling Interests", "Net Income Continuous Operations", "Tax Provision", "Pretax Income", "Other Income Expense", "Other Non Operating Income Expenses", "Net Non Operating Interest Income Expense", "Interest Expense Non Operating", "Interest Income Non Operating", "Operating Income", "Operating Expense", "Research And Development", "Selling General And Administration", "Gross Profit", "Cost Of Revenue", "Total Revenue", "Operating Revenue")
+        INSERT INTO yfCashFlow (Ticker, Date, "Free Cash Flow", "Repayment Of Debt", "Issuance Of Debt")
         VALUES 
-        (%s,%s, %s,%s, %s,%s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+        (%s, %s, %s, %s, %s) ON CONFLICT (Ticker, Date) DO NOTHING;
+;
         """
-        cur.execute(insert_query, ( 
-            row["Date_Ticker"], 
-            row["Tax Effect Of Unusual Items"],
-            row["Tax Rate For Calcs"],
-            row["Normalized EBITDA"],
-            row["Net Income From Continuing Operation Net Minority Interest"],
-            row["Reconciled Depreciation"],
-            row["Reconciled Cost Of Revenue"], 
-            row["EBITDA"],
-            row["EBIT"],
-            row["Net Interest Income"], 
-            row["Interest Expense"], 
-            row["Interest Income"], 
-            row["Normalized Income"], 
-            row["Net Income From Continuing And Discontinued Operation"], 
-            row["Total Expenses"], 
-            row["Total Operating Income As Reported"], 
-            row["Diluted Average Shares"], 
-            row["Basic Average Shares"], 
-            row["Diluted EPS"], 
-            row["Basic EPS"], 
-            row["Diluted NI Availto Com Stockholders"], 
-            row["Net Income Common Stockholders"], 
-            row["Net Income"], 
-            row["Net Income Including Noncontrolling Interests"], 
-            row["Net Income Continuous Operations"], 
-            row["Tax Provision"], 
-            row["Pretax Income"], 
-            row["Other Income Expense"],
-            row["Other Non Operating Income Expenses"], 
-            row["Net Non Operating Interest Income Expense"], 
-            row["Interest Expense Non Operating"], 
-            row["Interest Income Non Operating"], 
-            row["Operating Income"], 
-            row["Operating Expense"], 
-            row["Research And Development"], 
-            row["Selling General And Administration"], 
-            row["Gross Profit"], 
-            row["Cost Of Revenue"], 
-            row["Total Revenue"], 
-            row["Operating Revenue"],
-            ticker
-        ))
-        
+        cur.execute(insert_query, (
+            ticker,
+            row['Date'], 
+            row["Free Cash Flow"] if row['Free Cash Flow'] is not None else None, 
+            row["Repayment Of Debt"] if row['Repayment Of Debt'] is not None else None, 
+            row["Issuance Of Debt"] if row['Issuance Of Debt'] is not None else None
+
+            ))

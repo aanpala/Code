@@ -782,10 +782,7 @@ IssuanceOfCapitalStock, IssuanceOfDebt, RepaymentOfDebt, FreeCashFlow
         
         
 # yfinance new data
-#DONE
 # "Total Unusual Items", "Total Unusual Items Excluding Goodwill","Gain On Sale Of Security", "Selling And Marketing Expense", General And Administrative Expense'
-
-
 def create_yf_income_statement_table_if_not_exists(cur):
     create_yf_income_statement_table_query = """
     CREATE TABLE IF NOT EXISTS yfIncomeStatement (
@@ -832,9 +829,9 @@ def create_yf_income_statement_table_if_not_exists(cur):
         PRIMARY KEY (Ticker, Date)
     );
     """
-    
-    
     cur.execute(create_yf_income_statement_table_query)
+
+# Capital Lease Obligations, Total Non-Current Liabilities Net Minority Interest, Other Non-Current Liabilities, Trade and Other Payables Non-Current, Non-Current Deferred Liabilities, Non-Current Deferred Revenue, Non-Current Deferred Taxes Liabilities, Long-Term Debt And Capital Lease Obligation, Long-Term Capital Lease Obligation, Long-Term Debt, Other Current Liabilities, Pension and Other Post Retirement Benefit Plans Current, Total Tax Payable, Income Tax Payable,Total Non-Current Assets,Other Non-Current Assets, Long-Term Equity Investment, Net PPE (Net Property, Plant, and Equipment), Gross PPE (Gross Property, Plant, and Equipment), Leases, Other Properties, Hedging Assets Current, Work In Process, Allowance For Doubtful Accounts Receivable, Gross Accounts Receivable,Cash Equivalents, Cash Financial
 def create_yf_balance_sheet_table_if_not_exists(cur):
     create_yf_balance_sheet_table_query = """
     CREATE TABLE IF NOT EXISTS yfBalanceSheet(
@@ -843,20 +840,59 @@ def create_yf_balance_sheet_table_if_not_exists(cur):
         "Ordinary Shares Number" TEXT,
         "Share Issued" TEXT,
         "Net Debt" TEXT, 
-        "Total Debt" TEXT, 
+        "Total Debt" TEXT,
+        "Tangible Book Value" TEXT,
+        "Invested Capital" TEXT,
+        "Working Capital" TEXT,
+        "Net Tangible Assets" TEXT,
+        "Common Stock Equity" TEXT,
+        "Total Capitalization" TEXT,
+        "Total Equity Gross Minority Interest" TEXT,
+        "Stockholders Equity" TEXT,
+        "Gains Losses Not Affecting Retained Earnings" TEXT,
+        "Other Equity Adjustments" TEXT,
+        "Retained Earnings" TEXT,
+        "Capital Stock" TEXT,
+        "Common Stock" TEXT,
+        "Total Liabilities Net Minority Interest" TEXT,
+        "Current Liabilities" TEXT,
         PRIMARY KEY (Ticker, Date)
     );
     """
     cur.execute(create_yf_balance_sheet_table_query)
-      
+  
+#  Common Stock Issuance, Cash Dividends Paid, Common Stock Payments, Net Short Term Debt Issuance, Short Term Debt Issuance, Change In Other Current Liabilities, Cash Flow From Continuing Operating Activities, Change In Working Capital, Change In Other Working Capital, Change In Payables And Accrued Expense, Change In Payable, Change In Account Payable, Change In Inventory, Depreciation, Change In Receivables, Changes In Account Receivables, Stock Based Compensation, Deferred Tax, Deferred Income Tax, Depreciation Amortization Depletion, Depreciation And Amortization, Operating Gains Losses'
 def create_yf_cash_flow_table_if_not_exists(cur):
     create_yf_cash_flow_table_query = """
     CREATE TABLE IF NOT EXISTS yfCashFlow (
         Ticker VARCHAR(50),
         Date DATE, 
-        "Free Cash Flow" TEXT, 
-        "Repayment Of Debt" TEXT, 
-        "Issuance Of Debt" TEXT, 
+        "Free Cash Flow" TEXT,
+        "Repayment Of Debt" TEXT,
+        "Issuance Of Debt" TEXT,
+        "Capital Expenditure" TEXT,
+        "End Cash Position" TEXT,
+        "Beginning Cash Position" TEXT,
+        "Changes In Cash" TEXT,
+        "Financing Cash Flow" TEXT,
+        "Cash Flow From Continuing Financing Activities" TEXT,
+        "Net Other Financing Charges" TEXT,
+        "Net Common Stock Issuance" TEXT,
+        "Net Issuance Payments Of Debt" TEXT,
+        "Net Long Term Debt Issuance" TEXT,
+        "Long Term Debt Payments" TEXT,
+        "Long Term Debt Issuance" TEXT,
+        "Investing Cash Flow" TEXT,
+        "Cash Flow From Continuing Investing Activities" TEXT,
+        "Net Other Investing Changes" TEXT,
+        "Net Investment Purchase And Sale" TEXT,
+        "Sale Of Investment" TEXT,
+        "Purchase Of Investment" TEXT,
+        "Net Business Purchase And Sale" TEXT,
+        "Purchase Of Business" TEXT,
+        "Net PPE Purchase And Sale" TEXT,
+        "Purchase Of PPE" TEXT,
+        "Operating Cash Flow" TEXT,
         PRIMARY KEY (Ticker, Date)
 
     );
@@ -865,7 +901,6 @@ def create_yf_cash_flow_table_if_not_exists(cur):
     
  #DONE      
 
-# ONLY ONE DONE
 def update_or_insert_yf_income_statement_data(cur, ticker, row):
     check_query = "SELECT COUNT(*) FROM yfIncomeStatement WHERE Date = %s::date AND Ticker = %s::text;"
     cur.execute(check_query, (row['Date'], ticker))
@@ -962,30 +997,47 @@ VALUES
             row['Operating Revenue']
         ))
 
-#DONE
 def update_or_insert_yf_balance_sheet_data(cur, ticker, row):
-    check_query = "SELECT COUNT(*) FROM yfBalanceSheet WHERE Date = %s AND Ticker = %s;"
+    check_query = "SELECT COUNT(*) FROM yfBalanceSheet WHERE Date = %s::date AND Ticker = %s::text;"
     cur.execute(check_query, (row['Date'], ticker))
+    print(row)
     count = cur.fetchone()[0]
-
-    if count > 0:  # record with the same date and ticker already exists in the table
-        pass;
-    else:
+    print(count)
+    if count == 0:
         insert_query = """
-        INSERT INTO yfBalanceSheet (Ticker, Date, "Ordinary Shares Number", "Share Issued", "Net Debt", "Total Debt")
-        VALUES 
-        (%s, %s, %s, %s, %s, %s) ON CONFLICT (Ticker, Date) DO NOTHING;
+        INSERT INTO yfBalanceSheet (Ticker, Date, "Ordinary Shares Number", "Share Issued",
+"Net Debt", "Total Debt", "Tangible Book Value", "Invested Capital", "Working Capital",
+"Net Tangible Assets", "Common Stock Equity", "Total Capitalization", "Total Equity Gross Minority Interest", "Stockholders Equity",
+"Gains Losses Not Affecting Retained Earnings","Other Equity Adjustments", "Retained Earnings", "Capital Stock",
+"Common Stock", "Total Liabilities Net Minority Interest","Current Liabilities")
+VALUES  
+        (%s, %s, %s, %s, %s, %s, %s,  %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)        ON CONFLICT (Ticker, Date) DO NOTHING;
 
         """
+        # , %s, %s, %s, %s, %s
         cur.execute(insert_query, (
-            ticker,
-            row['Date'], 
-            row["Ordinary Shares Number"],
-            row["Share Issued"],
-            row["Net Debt"],
-            row["Total Debt"]
-        ))
-
+           ticker,
+            row['Date'],
+            row['Ordinary Shares Number'],
+            row['Share Issued'],
+            row['Net Debt'],
+            row['Total Debt'],
+            row['Tangible Book Value'],
+            row['Invested Capital'],
+            row['Working Capital'],
+            row['Net Tangible Assets'],
+            row['Common Stock Equity'],
+            row['Total Capitalization'],
+            row['Total Equity Gross Minority Interest'],
+            row['Stockholders Equity'],
+            row['Gains Losses Not Affecting Retained Earnings'],
+            row['Other Equity Adjustments'],
+            row['Retained Earnings'],
+            row['Capital Stock'],
+            row['Common Stock'],
+            row['Total Liabilities Net Minority Interest'],
+            row['Current Liabilities']
+            ))
 
 def update_or_insert_yf_cash_flow_data(cur, ticker, row):
     check_query = "SELECT COUNT(*) FROM yfCashFlow WHERE Date = %s AND Ticker = %s;"
@@ -996,16 +1048,42 @@ def update_or_insert_yf_cash_flow_data(cur, ticker, row):
         pass;
     else:
         insert_query = """
-        INSERT INTO yfCashFlow (Ticker, Date, "Free Cash Flow", "Repayment Of Debt", "Issuance Of Debt")
-        VALUES 
-        (%s, %s, %s, %s, %s) ON CONFLICT (Ticker, Date) DO NOTHING;
+        INSERT INTO yfCashFlow (Ticker, Date, "Free Cash Flow",  "Repayment Of Debt", "Issuance Of Debt",
+"Capital Expenditure", "End Cash Position", "Beginning Cash Position", "Changes In Cash", "Financing Cash Flow", "Cash Flow From Continuing Financing Activities", 
+"Net Other Financing Charges","Net Common Stock Issuance",         "Net Issuance Payments Of Debt","Net Long Term Debt Issuance",        "Long Term Debt Payments", "Long Term Debt Issuance",
+"Investing Cash Flow", "Cash Flow From Continuing Investing Activities", "Net Other Investing Changes",
+"Net Investment Purchase And Sale", "Sale Of Investment", "Purchase Of Investment", "Net Business Purchase And Sale",
+"Purchase Of Business", "Net PPE Purchase And Sale", "Purchase Of PPE", "Operating Cash Flow")        VALUES 
+        (%s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (Ticker, Date) DO NOTHING;
 ;
         """
         cur.execute(insert_query, (
             ticker,
             row['Date'], 
-            row["Free Cash Flow"] if row['Free Cash Flow'] is not None else None, 
-            row["Repayment Of Debt"] if row['Repayment Of Debt'] is not None else None, 
-            row["Issuance Of Debt"] if row['Issuance Of Debt'] is not None else None
-
+            row['Free Cash Flow'],
+            row['Repayment Of Debt'],
+            row['Issuance Of Debt'],
+            row['Capital Expenditure'],
+            row['End Cash Position'],
+            row['Beginning Cash Position'],
+            row['Changes In Cash'],
+            row['Financing Cash Flow'],
+            row['Cash Flow From Continuing Financing Activities'],
+            row['Net Other Financing Charges'],
+            row['Net Common Stock Issuance'],
+            row['Net Issuance Payments Of Debt'],
+            row['Net Long Term Debt Issuance'],
+            row['Long Term Debt Payments'],
+            row['Long Term Debt Issuance'],
+            row['Investing Cash Flow'],
+            row['Cash Flow From Continuing Investing Activities'],
+            row['Net Other Investing Changes'],
+            row['Net Investment Purchase And Sale'],
+            row['Sale Of Investment'],
+            row['Purchase Of Investment'],
+            row['Net Business Purchase And Sale'],
+            row['Purchase Of Business'],
+            row['Net PPE Purchase And Sale'],
+            row['Purchase Of PPE'],
+            row['Operating Cash Flow']
             ))

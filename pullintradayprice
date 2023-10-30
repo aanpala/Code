@@ -1,0 +1,37 @@
+import yfinance as yf
+import pandas as pd
+import sqlite3
+from SP500Wiki import *
+from methodsNEW import *
+
+# Establish a database connection
+conn = establish_database_connection()
+cur = conn.cursor()
+
+# Ticker Extraction
+get_tickers_query = "SELECT symbol FROM sp500wiki;"
+cur.execute(get_tickers_query)
+tickers = [record[0] for record in cur.fetchall()]
+tickers = tickers[0:4]
+
+create_intraday_price_data(cur)
+
+# User input for start date
+startdate = input("Enter the start date for intraday data (YYYY-MM-DD): ")
+enddate = input("Enter the end date for intraday data (YYYY-MM-DD): ")
+
+for ticker_symbol in tickers:
+    data = yf.download(ticker_symbol, period="1d", interval="1m", start=startdate, end= enddate)
+    if not data.empty:
+        data.reset_index(inplace=True)
+        data['Date'] = data['Datetime'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        data['Ticker'] = ticker_symbol
+        data['Delta'] = data['Close'] - data['Open']
+        data['Hourly_RoC'] = data['Close'].diff(periods=60)  # 60 minutes in an hour
+        data_list = data.to_dict('records')  # Convert DataFrame to a list of dictionaries
+        for row in data_list:
+            update_or_insert_yf_intraday_data(cur, ticker_symbol, row)
+
+# Commit changes to the database and close the cursor
+conn.commit()
+cur.close()

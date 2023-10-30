@@ -1089,6 +1089,8 @@ def update_or_insert_yf_cash_flow_data(cur, ticker, row):
             ))
 
 
+
+# Daily data
 def create_daily_price_data(cur):
     create_yf_daily_table_query = """
     CREATE TABLE IF NOT EXISTS yfDailyPrice (
@@ -1105,7 +1107,6 @@ def create_daily_price_data(cur):
     );
     """
     cur.execute(create_yf_daily_table_query)
-    
     
 def update_or_insert_yf_daily_data(cur, ticker, row):
     check_query = "SELECT COUNT(*) FROM yfDailyPrice WHERE Date = %s::date AND Ticker = %s::text;"
@@ -1131,4 +1132,45 @@ def update_or_insert_yf_daily_data(cur, ticker, row):
             row['Volume'], 
             row['Dividends'], 
             row["Stock Splits"]
+            ))
+
+# intraday table
+def create_intraday_price_data(cur):
+    create_yf_intraday_table_query = """
+    CREATE TABLE IF NOT EXISTS yfIntradayPrice (
+        Ticker TEXT,
+        Date TIMESTAMP,
+        Open REAL,
+        Close REAL,
+        Delta REAL,
+        Volume INTEGER,
+        Hourly_RoC REAL, 
+        PRIMARY KEY (Ticker, Date)
+    );
+    """
+    cur.execute(create_yf_intraday_table_query)
+    
+# insert into intraday
+def update_or_insert_yf_intraday_data(cur, ticker, row):
+    check_query = "SELECT COUNT(*) FROM yfIntradayPrice WHERE Date = %s::date AND Ticker = %s::text;"
+    #print(row)
+    #formatted_dates = row.index.strftime('%Y-%m-%d')
+    cur.execute(check_query, (row["Date"], ticker))
+    count = cur.fetchone()[0]
+
+    if count > 0:
+        pass;
+    else:
+        insert_query = """
+        INSERT INTO yfIntradayPrice (Ticker, Date, Open, Close, Volume, Delta, Hourly_RoC)        VALUES 
+        (%s, %s,%s, %s, %s, %s, %s) ON CONFLICT (Ticker, Date) DO NOTHING;
+        """
+        cur.execute(insert_query, (
+            ticker,
+            row['Date'], 
+            row['Open'], 
+            row['Close'],
+            row['Volume'], 
+            row['Delta'], 
+            row['Hourly_RoC']
             ))

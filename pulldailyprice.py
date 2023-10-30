@@ -3,7 +3,6 @@ import pandas as pd
 from SP500Wiki import *
 from methodsNEW import *
 
-
 conn = establish_database_connection()
 cur = conn.cursor()
 
@@ -11,14 +10,15 @@ cur = conn.cursor()
 get_tickers_query = "SELECT symbol FROM sp500wiki;"
 cur.execute(get_tickers_query)
 tickers = [record[0] for record in cur.fetchall()]
-tickers = tickers[0:4]
+tickers = tickers[0:10]
 
 # Create the daily price data table
 create_daily_price_data(cur)
 
 # Daily dataframes
-startdate = "2023-01-24"
-enddate = "2023-02-20"
+startdate = input("Enter the start date YYYY-MM-DD: ")
+enddate = input("Enter the end date YYYY-MM-DD: ")
+
 
 for ticker_symbol in tickers:
     ticker = yf.Ticker(ticker_symbol)

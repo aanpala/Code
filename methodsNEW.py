@@ -1087,3 +1087,48 @@ def update_or_insert_yf_cash_flow_data(cur, ticker, row):
             row['Purchase Of PPE'],
             row['Operating Cash Flow']
             ))
+
+
+def create_daily_price_data(cur):
+    create_yf_daily_table_query = """
+    CREATE TABLE IF NOT EXISTS yfDailyPrice (
+        Ticker TEXT,
+        Date DATE,
+        Open REAL,
+        High REAL,
+        Low REAL,
+        Close REAL,
+        Volume INTEGER,
+        Dividends REAL, 
+        "Stock Splits" REAL,
+        PRIMARY KEY (Ticker, Date)
+    );
+    """
+    cur.execute(create_yf_daily_table_query)
+    
+    
+def update_or_insert_yf_daily_data(cur, ticker, row):
+    check_query = "SELECT COUNT(*) FROM yfDailyPrice WHERE Date = %s::date AND Ticker = %s::text;"
+    #print(row)
+    #formatted_dates = row.index.strftime('%Y-%m-%d')
+    cur.execute(check_query, (row["Date"], ticker))
+    count = cur.fetchone()[0]
+
+    if count > 0:
+        pass;
+    else:
+        insert_query = """
+        INSERT INTO yfDailyPrice (Ticker, Date, Open, Close, High, Low, Volume, Dividends, "Stock Splits")        VALUES 
+        (%s, %s,%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (Ticker, Date) DO NOTHING;
+        """
+        cur.execute(insert_query, (
+            ticker,
+            row['Date'], 
+            row['Open'], 
+            row['Close'], 
+            row['High'], 
+            row['Low'], 
+            row['Volume'], 
+            row['Dividends'], 
+            row["Stock Splits"]
+            ))

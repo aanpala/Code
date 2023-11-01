@@ -1,10 +1,8 @@
 import psycopg2
 import pandas as pd
 from pulldata import *
+from datetime import datetime, timedelta
 
-
-#pd.options.mode.chained_assignment = None
-# NVARCHAR(50) for ticker date 
 def establish_database_connection():
     conn = psycopg2.connect(
         dbname='MyDatabase',
@@ -15,7 +13,7 @@ def establish_database_connection():
     )
     return conn
 
-
+# Table Creation
 def create_general_table_if_not_exists(cur):
     create_general_table_query = """
     CREATE TABLE IF NOT EXISTS General (
@@ -782,7 +780,7 @@ IssuanceOfCapitalStock, IssuanceOfDebt, RepaymentOfDebt, FreeCashFlow
         
         
 # yfinance new data
-# "Total Unusual Items", "Total Unusual Items Excluding Goodwill","Gain On Sale Of Security", "Selling And Marketing Expense", General And Administrative Expense'
+# variables not used: "Total Unusual Items", "Total Unusual Items Excluding Goodwill","Gain On Sale Of Security", "Selling And Marketing Expense", General And Administrative Expense'
 def create_yf_income_statement_table_if_not_exists(cur):
     create_yf_income_statement_table_query = """
     CREATE TABLE IF NOT EXISTS yfIncomeStatement (
@@ -831,7 +829,7 @@ def create_yf_income_statement_table_if_not_exists(cur):
     """
     cur.execute(create_yf_income_statement_table_query)
 
-# Capital Lease Obligations, Total Non-Current Liabilities Net Minority Interest, Other Non-Current Liabilities, Trade and Other Payables Non-Current, Non-Current Deferred Liabilities, Non-Current Deferred Revenue, Non-Current Deferred Taxes Liabilities, Long-Term Debt And Capital Lease Obligation, Long-Term Capital Lease Obligation, Long-Term Debt, Other Current Liabilities, Pension and Other Post Retirement Benefit Plans Current, Total Tax Payable, Income Tax Payable,Total Non-Current Assets,Other Non-Current Assets, Long-Term Equity Investment, Net PPE (Net Property, Plant, and Equipment), Gross PPE (Gross Property, Plant, and Equipment), Leases, Other Properties, Hedging Assets Current, Work In Process, Allowance For Doubtful Accounts Receivable, Gross Accounts Receivable,Cash Equivalents, Cash Financial
+# variables not used: Capital Lease Obligations, Total Non-Current Liabilities Net Minority Interest, Other Non-Current Liabilities, Trade and Other Payables Non-Current, Non-Current Deferred Liabilities, Non-Current Deferred Revenue, Non-Current Deferred Taxes Liabilities, Long-Term Debt And Capital Lease Obligation, Long-Term Capital Lease Obligation, Long-Term Debt, Other Current Liabilities, Pension and Other Post Retirement Benefit Plans Current, Total Tax Payable, Income Tax Payable,Total Non-Current Assets,Other Non-Current Assets, Long-Term Equity Investment, Net PPE (Net Property, Plant, and Equipment), Gross PPE (Gross Property, Plant, and Equipment), Leases, Other Properties, Hedging Assets Current, Work In Process, Allowance For Doubtful Accounts Receivable, Gross Accounts Receivable,Cash Equivalents, Cash Financial
 def create_yf_balance_sheet_table_if_not_exists(cur):
     create_yf_balance_sheet_table_query = """
     CREATE TABLE IF NOT EXISTS yfBalanceSheet(
@@ -861,7 +859,7 @@ def create_yf_balance_sheet_table_if_not_exists(cur):
     """
     cur.execute(create_yf_balance_sheet_table_query)
   
-#  Common Stock Issuance, Cash Dividends Paid, Common Stock Payments, Net Short Term Debt Issuance, Short Term Debt Issuance, Change In Other Current Liabilities, Cash Flow From Continuing Operating Activities, Change In Working Capital, Change In Other Working Capital, Change In Payables And Accrued Expense, Change In Payable, Change In Account Payable, Change In Inventory, Depreciation, Change In Receivables, Changes In Account Receivables, Stock Based Compensation, Deferred Tax, Deferred Income Tax, Depreciation Amortization Depletion, Depreciation And Amortization, Operating Gains Losses'
+# variables not used: Common Stock Issuance, Cash Dividends Paid, Common Stock Payments, Net Short Term Debt Issuance, Short Term Debt Issuance, Change In Other Current Liabilities, Cash Flow From Continuing Operating Activities, Change In Working Capital, Change In Other Working Capital, Change In Payables And Accrued Expense, Change In Payable, Change In Account Payable, Change In Inventory, Depreciation, Change In Receivables, Changes In Account Receivables, Stock Based Compensation, Deferred Tax, Deferred Income Tax, Depreciation Amortization Depletion, Depreciation And Amortization, Operating Gains Losses'
 def create_yf_cash_flow_table_if_not_exists(cur):
     create_yf_cash_flow_table_query = """
     CREATE TABLE IF NOT EXISTS yfCashFlow (
@@ -1088,9 +1086,7 @@ def update_or_insert_yf_cash_flow_data(cur, ticker, row):
             row['Operating Cash Flow']
             ))
 
-
-
-# Daily data
+# Daily Data
 def create_daily_price_data(cur):
     create_yf_daily_table_query = """
     CREATE TABLE IF NOT EXISTS yfDailyPrice (
@@ -1134,6 +1130,28 @@ def update_or_insert_yf_daily_data(cur, ticker, row):
             row["Stock Splits"]
             ))
 
+def get_latest_daily_date(cur, ticker_symbol):
+    # Query the database to get the latest date for the given ticker
+    query = f"SELECT MAX(Date) FROM yfDailyPrice WHERE Ticker = '{ticker_symbol}';"
+    cur.execute(query)
+    latest_date = cur.fetchone()[0]
+    return latest_date
+
+def set_daily_date_ranges(cur, ticker_symbol):
+    latest_date = get_latest_daily_date(cur, ticker_symbol)
+    
+    if latest_date:
+        # Convert the date to a string and then parse it as a datetime
+        latest_date = datetime.strptime(str(latest_date), '%Y-%m-%d') + timedelta(days=1)
+    else:
+        # If there's no data, start from a specific date
+        latest_date = datetime.strptime("2000-01-01", '%Y-%m-%d')
+    
+    # Set the end date to the current date
+    end_date = datetime.now().strftime('%Y-%m-%d')
+    
+    return latest_date.strftime('%Y-%m-%d'), end_date
+
 # intraday table
 def create_intraday_price_data(cur):
     create_yf_intraday_table_query = """
@@ -1149,11 +1167,10 @@ def create_intraday_price_data(cur):
     );
     """
     cur.execute(create_yf_intraday_table_query)
-    
 # insert into intraday
 def update_or_insert_yf_intraday_data(cur, ticker, row):
     check_query = "SELECT COUNT(*) FROM yfIntradayPrice WHERE Date = %s::date AND Ticker = %s::text;"
-    #print(row)
+    print(row)
     #formatted_dates = row.index.strftime('%Y-%m-%d')
     cur.execute(check_query, (row["Date"], ticker))
     count = cur.fetchone()[0]
@@ -1173,4 +1190,70 @@ def update_or_insert_yf_intraday_data(cur, ticker, row):
             row['Volume'], 
             row['Delta'], 
             row['Hourly_RoC']
+            ))
+
+def get_latest_intraday_datetime(cur, ticker_symbol):
+    # Query the database to get the latest datetime for the given ticker
+    query = f"SELECT MAX(Date) FROM yfIntradayPrice WHERE Ticker = '{ticker_symbol}';"
+    cur.execute(query)
+    latest_datetime = cur.fetchone()[0]
+    return latest_datetime
+
+def set_intraday_datetime_ranges(cur, ticker_symbol):
+    latest_datetime = get_latest_intraday_datetime(cur, ticker_symbol)
+    
+    if latest_datetime:
+        # Increment the latest datetime by one minute
+        latest_datetime = latest_datetime + timedelta(minutes=1)
+        if latest_datetime.time() == datetime.min.time():
+            # If the latest datetime was the last minute of the day, go to the next day
+            latest_datetime = latest_datetime.replace(hour=0, minute=0, second=0) + timedelta(days=1)
+    else:
+        # If there's no data, start from a specific datetime
+        latest_datetime = datetime.strptime("2000-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
+    
+    # Set the end datetime to the current datetime
+    end_datetime = datetime.now()
+    
+    return latest_datetime, end_datetime
+
+# general information
+def create_general_stock_data(cur):
+    create_yf_general_table_query = """
+    CREATE TABLE IF NOT EXISTS yfGeneral (
+        Ticker TEXT, 
+        StockExchange TEXT, 
+        Name TEXT, 
+        Industry TEXT,  
+        Sector TEXT, 
+        LongDescription TEXT,
+        Website TEXT,
+        HeadQuarter TEXT, 
+        Founded TEXT,
+        PRIMARY KEY (Ticker)
+);
+    """
+    cur.execute(create_yf_general_table_query)            
+              
+def update_or_insert_yf_general_data(cur, ticker, row):
+    check_query = "SELECT COUNT(*) FROM yfGeneral WHERE Ticker = %s::text;"
+    cur.execute(check_query, (ticker))
+    count = cur.fetchone()[0]
+    if count > 0:
+        pass;
+    else:
+        insert_query = """
+        INSERT INTO yfIntradayPrice (Ticker, StockExchange, Name, Industry, Sector, LongDescription, Website, HeadQuarter, Founded)        VALUES 
+        (%s, %s,%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (Ticker) DO NOTHING;
+        """
+        cur.execute(insert_query, (
+            ticker,
+            row['StockExchange'], 
+            row['Name'], 
+            row['Industry'],
+            row['Sector'], 
+            row['LongDescription'], 
+            row['Website'],
+            row['HeadQuarter'], 
+            row['Founded']
             ))
